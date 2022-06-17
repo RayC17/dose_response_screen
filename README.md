@@ -8,4 +8,4 @@ Fluorescence intenisities are automatically generated into ASCII csv files with 
 ## Drug Assay Format
  
 The tool assumes a left to right 10 point serial dilution, with replicates repeating top to bottom. Typically 96 well assays are 100ul and 384 well assay are 25ul total volume.
- ![This is an image](images/plateformat.png)
+ ![This is an image](images/plate_formats.png)

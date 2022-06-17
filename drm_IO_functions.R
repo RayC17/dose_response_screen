@@ -1,4 +1,35 @@
 
+import_plate <- function(file.name, assays){
+  message <- NULL
+  file_id <-NULL
+  data <- NULL
+  tryCatch(
+    data <- as.data.frame(read.csv(file.name, sep = ",",header = FALSE,
+                                    skip = 10, stringsAsFactors = FALSE)),
+    error=function(e) NULL)
+  
+  if(is.null(data)||nrow(data)==0){
+      message <- 'plate readings are empty!'
+  }
+  tag <- as.data.frame(read.csv(file.name, sep = ",",header = FALSE,
+                                    nrows = 3, stringsAsFactors = FALSE))[3,1]
+
+  if(nchar(tag) < 5){
+    message <- 'ID1 empty, no plate ID!'
+    
+  }else{
+    file_id <- gsub(" ","", strsplit(tag, " ")[[1]][2], fixed = TRUE)
+    
+    if(!any(file_id == assays$plate_id)  ){
+      message <-'plate id does not match meta file'}
+  }
+
+  
+  plate <- list(data = data, file_id = file_id, message = message)
+  return(plate)
+}
+
+
 retrieve_results <- function(model, assays){
   #get coefs and calculate GI50
   coefs <- setNames(

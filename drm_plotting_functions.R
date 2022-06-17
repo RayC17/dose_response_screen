@@ -16,20 +16,19 @@ individual_plots <- function(data, model, assay){
   fit$pmax <- pv[,3]
   fit<- data.frame(fit)
   
-  extra_var <- data.frame(cell = rep(assay$cell, length(data)),
-                          drug = rep(assay$drug, length(data)),
-                          starting_uM = rep(assay$starting_uM, length(data)),
-                          plate_id = rep(assay$plate_id, length(data)),
-                          position_id = rep(assay$position_id, length(data)))
-  print(length(data))
-  print(data)
+  extra_var <- data.frame(cell = rep(assay$cell, nrow(data)),
+                          drug = rep(assay$drug, nrow(data)),
+                          starting_uM = rep(assay$starting_uM, nrow(data)),
+                          plate_id = rep(assay$plate_id, nrow(data)),
+                          position_id = rep(assay$position_id, nrow(data)))
+
   data_exp <- cbind(data, extra_var) 
-  print(data)
-  extra_var <- data.frame(cell = rep(assay$cell, length(fit)),
-                          drug = rep(assay$drug, length(fit)),
-                          starting_uM = rep(assay$starting_uM, length(fit)),
-                          plate_id = rep(assay$plate_id, length(fit)),
-                          position_id = rep(assay$position_id, length(fit)))
+ 
+  extra_var <- data.frame(cell = rep(assay$cell, nrow(fit)),
+                          drug = rep(assay$drug, nrow(fit)),
+                          starting_uM = rep(assay$starting_uM, nrow(fit)),
+                          plate_id = rep(assay$plate_id, nrow(fit)),
+                          position_id = rep(assay$position_id, nrow(fit)))
 
   fit <- cbind(fit, extra_var) 
   
@@ -54,7 +53,7 @@ individual_plots <- function(data, model, assay){
   IC50 <- as.numeric(as.character(IC50))
   IC50 <- round(IC50, 2)
   label <- paste0("IC50\n",as.character(IC50), conc)
-  print(data)
+
   #Generate plot
   p <- ggplot(data, aes(x = dose, y = value)) +
     geom_point(size = 0.5) +

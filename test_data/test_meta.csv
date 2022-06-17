@@ -11,8 +11,7 @@ plate_4,pos_9,384w,3,BT-C10,Dd2-WT,0.5,2,25,3
 plate_4,pos_10,384w,3,BT-C10,Dd2-WT,0.5,2,25,3
 plate_A1,pos_1,96w,3,06-21-C37,Dd2-WT,16.6,2,100,1
 plate_A1,pos_2,96w,3,06-21-C37,3D7-WT,19.5,2,100,1
-plate_A2,pos_1,96w,3,test_fail,Dd2-WT,16.6,2,100,1
-plate_A2,pos_2,96w,3,test_fail,3D7-WT,19.5,2,100,1
+plate_A2,pos_1,96w,3,test_fail,Dd2-WT,10,2,100,1
 plate_A3,pos_3,96w,2,04-21-C01,Dd2-WT,10,2,100,1
 plate_5,pos_1,384w,2,Torin2,Dd2-WT,0.04,2,25,3
 plate_5,pos_2,384w,2,NITD609,Dd2-WT,0.04,2,25,3

@@ -15,7 +15,7 @@ if(length(new_packages)) {
 #utility scripts with jobs broken down into functions
 use_these_utilities <- c("~/dose_response_screen/drm_data_structures.R",
                          "~/dose_response_screen/drm_plotting_functions.R",
-                         "~/dose_response_screen/drm_export_functions.R")
+                         "~/dose_response_screen/drm_IO_functions.R")
 sapply(use_these_utilities, source)
 
 #--------- set job parameters --------------------------------------------------
@@ -44,56 +44,57 @@ main <- function(meta, batch_id){
   c<-1
   #---------loop through files ---------------------------------------------------
   for (i in 1:length(file.names)){
+    plate <- import_plate(file.names[i], assays) 
+  
+    if (!is.null(plate$message)){
+      cat(paste0('    | ', file.names[i], ': ',plate$message, '. Skipping plate\n'))
     
-    plate <- as.data.frame(read.csv(file.names[i], sep = ",",header = FALSE, stringsAsFactors = FALSE))
-    file_id <- strsplit(plate[4,1], " ")[[1]][2]
-    file_id <- gsub(" ","", file_id, fixed = TRUE)
-    cat(paste0('    | Reading in: ',file.names[i], 'with plate id : ',file_id,'.\n'))
-    
-    if (!any(file_id == assays$plate_id)  ){
-      cat(paste0('    | plate id does not match meta file, skipping plate.\n'))
       cat('    ---------------------------------------------------------------------\n')
+      i<-i+1
       next
     }
-    
-    plate_assays <-  assays %>% filter( plate_id == file_id)
-    
+    cat(paste0('    | ',file.names[i], ': ID1 = ',plate$file_id,'.\n'))
+    plate_assays <-  assays %>% filter(plate_id  == plate$file_id)
+   
     #--------loop through plate---------------------------------------------------
     for (j in 1:nrow(plate_assays)){
-      cat(paste0('    | Assay in ',plate_assays$position_id[j],
-                 ' is ', plate_assays$drug[j], ' treated ', plate_assays$drug[j],'.\n'))
+      cat(paste0('    | ',plate_assays$position_id[j],
+                 ' is ', plate_assays$drug[j], ' treated ', plate_assays$cell[j],'.\n'))
       
       # get plate layout info for each assay
-      locate <- get_locations(plate_assays[j,], plate)
+      locate <- get_locations(plate_assays[j,], plate$data)
       
       # retrieve data from plate for assay
-      data <- get_assay_data(plate, locate, plate_assays[j,])
+      data <- get_assay_data(plate$data, locate, plate_assays[j,])
+      
+    
       
       #fitting function
       control <- drmc(errorm = TRUE,noMessage = TRUE, warnVal = -1)
-      
+
       possibleError <- tryCatch(
         LL.4 <- drm(data = data,value~dose,fct=LL.4(fixed=c(NA,NA, NA, NA)),
                     na.action = na.omit, control = control),
         error=function(e) e,
         silent = TRUE
       )
-      
+   
       if(inherits(possibleError, "error")) {
-        cat('    | Convergence failed. The model was not fitted!\n')
-        plate_assays$IC50[j] <- 'Convergence failed. The model was not fitted! '
-        all_Plots[[c]] <-failed_plots(data, plate_assays[j,])
+        cat('    | Convergence failed. The model was not fit!\n')
+        plate_assays$IC50[j] <- 'Convergence failed. The model was not fit! '
+        results_all[nrow(results_all) + 1,] <- c(plate_assays[j,],NA,NA,NA,NA,NA)
+        all_Plots[[c]] <-failed_plots(data , plate_assays[j,])
         c<-c+1
         next
       }
       cat(paste0('    | model fit succesffuly.\n'))
       #get model coefficients and combine in one table
-      model_results <- retrieve_results(LL.4, plate_assays[j,] )
+      model_results <- retrieve_results(LL.4 , plate_assays[j,] )
      
       results_all[nrow(results_all) + 1,] <- model_results 
       
       #generates predited curves from model and plots each assay
-      plot_fit <- individual_plots(data, LL.4, model_results)
+      plot_fit <- individual_plots(data,LL.4 , model_results)
      
       all_Plots[[c]] <- plot_fit$plot
       c <- c+1
@@ -113,6 +114,8 @@ main <- function(meta, batch_id){
   export_results(batch_id,results_all,curves_all,
                  data_all, all_Plots,all_grouped_plots)
 }
-
+sapply(use_these_utilities, source)
 main(meta, batch_id)          
+
+
 

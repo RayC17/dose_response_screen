@@ -22,7 +22,7 @@ sapply(use_these_utilities, source)
 #identifer used as prefix for results output
 batch_id <- 'test'
 #csv format containing assay data, see project folder /example_meta.csv
-meta <- 'test_meta.csv' 
+meta <- "test_meta.csv"  
 #set you're working directory to a folder containing raw 'TRno' prefixed csv
 # from the plate reader and the meta file
 # sessions > set working directory > choose directory
@@ -34,7 +34,7 @@ main <- function(meta, batch_id){
   cat(paste0('    | Drug Assay Batch: ', batch_id, '\n'))
   cat('    ---------------------------------------------------------------------\n')
   
-  file.names <- dir(pattern ="TRno")
+  file.names <- dir(pattern ="TRno|automated")
   assays <- as.data.frame(read.csv(meta, sep = ",",header = TRUE, stringsAsFactors = FALSE))
   
   all_Plots <- list()
@@ -116,6 +116,7 @@ main <- function(meta, batch_id){
 }
 #sapply(use_these_utilities, source)
 main(meta, batch_id)          
+
 
 
 

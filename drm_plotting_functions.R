@@ -1,6 +1,6 @@
 
 individual_plots <- function(data, model, assay){
-
+  themex <- readRDS('~/bin/saved_theme_drm.rds')
   ####Use model to generate fitted curve for plotting
   MaxD <- max(data$dose)
   MinD <- min(data$dose)
@@ -17,7 +17,7 @@ individual_plots <- function(data, model, assay){
   fit<- data.frame(fit)
   
   extra_var <- data.frame(cell = rep(assay$cell, nrow(data)),
-                          drug = rep(assay$drug, nrow(data)),
+                          compound = rep(assay$compound, nrow(data)),
                           starting_uM = rep(assay$starting_uM, nrow(data)),
                           plate_id = rep(assay$plate_id, nrow(data)),
                           position_id = rep(assay$position_id, nrow(data)))
@@ -25,22 +25,23 @@ individual_plots <- function(data, model, assay){
   data_exp <- cbind(data, extra_var) 
  
   extra_var <- data.frame(cell = rep(assay$cell, nrow(fit)),
-                          drug = rep(assay$drug, nrow(fit)),
+                          compound = rep(assay$compound, nrow(fit)),
                           starting_uM = rep(assay$starting_uM, nrow(fit)),
                           plate_id = rep(assay$plate_id, nrow(fit)),
-                          position_id = rep(assay$position_id, nrow(fit)))
+                          position_id = rep(assay$position_id, nrow(fit)),
+                          index = rep(assay$index, nrow(fit)))
 
   fit <- cbind(fit, extra_var) 
   
   fit_2 <-fit
-  title = paste(assay$drug, ' treated ', assay$cell)
-  subtitle = paste(assay$format, ', ',assay$plate_id,', ',assay$position_id)
+  title = paste(assay$compound, ' treated ', assay$cell)
+  subtitle = paste(assay$index,', ', assay$format, ', ',assay$plate_id,', ',assay$position_id)
   IC50 <- as.numeric(as.character(assay$IC50))
   conc <- 'uM'
 
   MinD <- min(data$dose)-1000
-  if (assay$IC50  > MaxD | MinR >45){IC50<-paste0(">",MaxD)}
-  else if (IC50 < 0.1){
+  
+  if (MaxD < 1){
     data$dose <- data$dose*1000
     fit_2$dose <- fit_2$dose*1000
     IC50 <- IC50 * 1000
@@ -49,10 +50,16 @@ individual_plots <- function(data, model, assay){
     MinD <- min(data$dose)
     MaxD <- max(data$dose)
   }
- 
+  
   IC50 <- as.numeric(as.character(IC50))
   IC50 <- round(IC50, 2)
-  label <- paste0("IC50\n",as.character(IC50), conc)
+  if (IC50  > MaxD | MinR > 45){
+    label <- paste0("IC50\n",'>',as.character(MaxD), conc)
+  }else{
+    label <- paste0("IC50\n",as.character(IC50), conc)
+    }
+
+  
 
   #Generate plot
   p <- ggplot(data, aes(x = dose, y = value)) +
@@ -60,11 +67,17 @@ individual_plots <- function(data, model, assay){
     geom_ribbon(data=fit_2, aes(x=dose, y=pr, ymin=pmin, ymax=pmax), alpha=0.2) +
     geom_line(data=fit_2, aes(x=dose, y=pr))+
     geom_vline(aes(xintercept=IC50), size = 0.4, linetype="dotted", color="blue")+
-    annotate("text", x = MaxD, y = 120, label = paste0(label), colour = 'blue', size=2)+
+    annotate("text", x = MaxD*0.95, y = 115, label = paste0(label), colour = 'blue', size=2)+
     labs(title = title, subtitle = subtitle, x = paste0('log(Drug[',conc,'])'), y = "Growth (%)") +
-    scale_x_log10(limits=c(MinD,MaxD))+
-    ylim(-5,120)+ theme_classic(base_size = 8)
-  
+    scale_x_log10(labels = scales::comma,limits=c(MinD,MaxD))+
+    ylim(-5,120)+ theme_classic(base_size = 8)+
+    annotation_logticks(outside = TRUE, side = 'b', color = 'grey70', 
+                    long = unit(0.5,"lines"),
+                     mid = unit(0.25,"lines"),
+                     short = unit(0.25,"lines")) +
+    coord_cartesian(clip = "off") +
+    themex
+ 
   #print(data_exp)
   plot_fit = list("plot" = p, "curve" = fit, "data" = data_exp)
   return(plot_fit)
@@ -90,37 +103,47 @@ failed_plots <- function(dataP, info){
 
 
 grouped_plots <- function(all_assays,all_curves){
-  
+  themex <- readRDS('~/bin/saved_theme_drm.rds')
   all_grouped_plots <- list()
-  drugs <- unique(all_assays$drug)
+  compounds <- unique(all_assays$compound)
   h<-1
 
-  for (i in drugs){
-    fit <- subset(all_curves, drug ==i)
-    
+  for (i in compounds){
+    fit <- subset(all_curves, compound ==i)
+    index <- unique(fit$index)
+
     MaxD <- max(fit$dose)
     MinD <- min(fit$dose)
     
-
+    conc <- 'uM'
+    if (MaxD < 0.2){
+      fit$dose <- fit$dose*1000
+      conc <- 'nM'
+      
+      MinD <- min(fit$dose)
+      MaxD <- max(fit$dose)
+    }
+   
     fit$cell<-as.factor(fit$cell)
     fit$plate_id <- as.factor(fit$plate_id)
     fit$position_id <- as.factor(fit$position_id)
     
-    p <- ggplot(fit, aes(x = dose, y = value,  colour =plate_id,  group=interaction(plate_id, position_id))) +
-      geom_line(data=fit, aes(x=dose, y=pr, linetype = cell), size = 0.4)+
-      #geom_ribbon(data=fit, aes(x=conc, y=pr, ymin=pmin, ymax=pmax), alpha=0.1, linetype = 0) +
-      labs(title = i, x = 'log(Drug[uM])', y = "Growth (%)")+
-      #scale_linetype(guide = "none") +
-      scale_x_log10(labels = scales::comma, limits=c(MinD-1000,MaxD))+
-      ylim(-5,110)+ 
-      theme_classic(base_size = 8)+
-      theme(plot.margin = unit(c(1,0.5,1,0.5), "cm"))
-  
- 
-      
+    p <- ggplot(fit, aes(x = dose, y = pr, colour = cell)) +
+      geom_ribbon(data=fit, aes(x=dose, y=pr, ymin=pmin, ymax=pmax,
+                                group=interaction(plate_id, position_id)), 
+                  alpha=0.2, colour = NA) +
+      geom_line(data=fit, aes(x=dose, y=pr, linetype = cell,
+                              group=interaction(plate_id, position_id)))+
+     labs(title = i, subtitle = index,
+         x = paste0('log(Drug[',conc,'])'), y = "Growth (%)") +
+      scale_x_log10(labels = scales::comma, limits=c(MinD,MaxD))+
+      ylim(-5,120)+
+      themex
     
     all_grouped_plots[[h]] <- p
     h <- h+1
+    #plt<-last_plot()
+    #ggsave(paste0('DA_',index,'.png'), plt,dpi=300, width=3.5,height=3) 
 
   }
   return(all_grouped_plots)

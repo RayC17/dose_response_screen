@@ -20,9 +20,9 @@ sapply(use_these_utilities, source)
 
 #--------- set job parameters --------------------------------------------------
 #identifer used as prefix for results output
-batch_id <- 'test'
+batch_id <- 'screen-03-22'
 #csv format containing assay data, see project folder /example_meta.csv
-meta <- "test_meta.csv"  
+meta <- "screen_03-22-meta.csv"  
 #set you're working directory to a folder containing raw 'TRno' prefixed csv
 # from the plate reader and the meta file
 # sessions > set working directory > choose directory
@@ -38,8 +38,8 @@ main <- function(meta, batch_id){
   assays <- as.data.frame(read.csv(meta, sep = ",",header = TRUE, stringsAsFactors = FALSE))
   
   all_Plots <- list()
-  results_all <- data.frame(matrix(ncol = 16, nrow = 0))
-  curves_all <- data.frame(matrix(ncol = 7, nrow = 0))
+  results_all <- data.frame(matrix(ncol = 17, nrow = 0))
+  curves_all <- data.frame(matrix(ncol = 8, nrow = 0))
   data_all <- data.frame(matrix(ncol = 8, nrow = 0))
   c<-1
   #---------loop through files ---------------------------------------------------
@@ -55,11 +55,12 @@ main <- function(meta, batch_id){
     }
     cat(paste0('    | ',file.names[i], ': ID1 = ',plate$file_id,'.\n'))
     plate_assays <-  assays %>% filter(plate_id  == plate$file_id)
+    plate_assays$file_name <- file.names[i]
    
     #--------loop through plate---------------------------------------------------
     for (j in 1:nrow(plate_assays)){
       cat(paste0('    | ',plate_assays$position_id[j],
-                 ' is ', plate_assays$drug[j], ' treated ', plate_assays$cell[j],'.\n'))
+                 ' is ', plate_assays$compound[j], ' treated ', plate_assays$cell[j],'.\n'))
       
       # get plate layout info for each assay
       locate <- get_locations(plate_assays[j,], plate$data)
@@ -103,7 +104,7 @@ main <- function(meta, batch_id){
       curves_all <- rbind(curves_all,plot_fit$curve)
       #combine all input data together
       data_all<- rbind(data_all, plot_fit$data)
-      
+    
     }#-----end loop for plate/file -----------------------------------------------
     cat('    ---------------------------------------------------------------------\n')
   }#-------end of loop for files, final exports-----------------------------------
@@ -111,11 +112,14 @@ main <- function(meta, batch_id){
   #takes all data and generate plots grouped by compound
   all_grouped_plots <-  grouped_plots(data_all, curves_all)
   #exports all results
+
   export_results(batch_id,results_all,curves_all,
                  data_all, all_Plots,all_grouped_plots)
 }
 #sapply(use_these_utilities, source)
+
 main(meta, batch_id)          
+
 
 
 
